@@ -24,13 +24,17 @@ public class BetController : Controller
     [HttpPost]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Authorize(Policy = "Client")]
-    public IActionResult Post([FromBody] BetDTORequest request)
+    public async Task<IActionResult> Post([FromBody] BetDTORequest request)
     {
         try
         {
             var token = HttpContext.User.Identity as ClaimsIdentity;
             var email = token?.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
-            return Created("", _repository.Post(request, email!));
+
+            await _oddService.UpdateOdd(request.MatchId, request.TeamId, request.BetValue);
+            var betResponse = _repository.Post(request, email!);
+
+            return Created("", betResponse);
         }
         catch (Exception ex)
         {
